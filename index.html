@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SENAI RS | Dashboard Market Share CAGED — Aprendizagem Industrial Q2 2026</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1B2956; --navy-light: #2E5A88; --orange: #F58220;
+    --green: #00A859; --red: #E63946; --amber: #F39C12;
+    --gray: #6C757D; --bg: #F4F6F9; --card-bg: #FFFFFF; --border: #E2E8F0;
+  }
+  * { font-family: 'Inter', sans-serif; }
+  body { background: var(--bg); }
+  .kpi-card { background: var(--card-bg); border-radius: 12px; padding: 1.25rem 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04); transition: transform 0.2s ease, box-shadow 0.2s ease; position: relative; overflow: hidden; }
+  .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.10), 0 4px 10px rgba(0,0,0,0.06); }
+  .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+  .kpi-navy::before { background: var(--navy); } .kpi-green::before { background: var(--green); }
+  .kpi-orange::before { background: var(--orange); } .kpi-red::before { background: var(--red); }
+  .kpi-amber::before { background: var(--amber); }
+  .kpi-value { font-size: 1.75rem; font-weight: 800; line-height: 1.1; }
+  .kpi-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gray); }
+  .kpi-sub { font-size: 0.7rem; color: var(--gray); margin-top: 0.25rem; }
+  .section-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--navy); padding-bottom: 0.5rem; border-bottom: 2px solid var(--navy); margin-bottom: 1rem; }
+  .tab-btn { padding: 0.5rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; cursor: pointer; border: 1px solid var(--border); background: white; color: var(--gray); }
+  .tab-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+  .tab-btn:hover:not(.active) { background: #F1F5F9; }
+  .tab-btn:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+  .chart-container { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .insight-box { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%); color: white; border-radius: 12px; padding: 1.25rem 1.5rem; }
+  .insight-box .insight-num { font-size: 2rem; font-weight: 900; opacity: 0.3; }
+  .funnel-step { padding: 1rem 1.5rem; color: white; display: flex; align-items: center; justify-content: space-between; gap: 1rem; box-sizing: border-box; }
+  .funnel-step .funnel-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; opacity: 0.85; }
+  .funnel-step .funnel-value { font-size: 1.5rem; font-weight: 800; white-space: nowrap; }
+  .funnel-step .funnel-desc { font-size: 0.7rem; opacity: 0.7; }
+  .roadmap-step { flex: 1; text-align: center; padding: 1rem; border-radius: 10px; position: relative; transition: transform 0.2s; min-width: 140px; }
+  .roadmap-step:hover { transform: scale(1.03); }
+  .roadmap-arrow { display: flex; align-items: center; color: var(--gray); font-size: 1.5rem; padding: 0 0.5rem; }
+  .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+  .badge-green { background: #D4EDDA; color: #155724; } .badge-blue { background: #D1ECF1; color: #0C5460; }
+  .badge-amber { background: #FFF3CD; color: #856404; } .badge-red { background: #F8D7DA; color: #721C24; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .data-table th { background: var(--navy); color: white; padding: 0.6rem 0.75rem; text-align: left; font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; position: sticky; top: 0; }
+  .data-table th:first-child { border-radius: 8px 0 0 0; } .data-table th:last-child { border-radius: 0 8px 0 0; }
+  .data-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  .data-table tr:hover { background: #F8FAFC; } .data-table tr:nth-child(even) { background: #FCFCFD; }
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeInUp 0.5s ease forwards; }
+  .scroll-hint::-webkit-scrollbar { height: 6px; } .scroll-hint::-webkit-scrollbar-track { background: #F1F5F9; border-radius: 3px; }
+  .scroll-hint::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+  .chart-error { padding: 2rem; text-align: center; color: var(--gray); }
+  .playbook-region { font-size: 0.68rem; color: var(--gray); margin-top: 0.5rem; line-height: 1.4; }
+  .region-selector { width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 2px solid var(--navy); font-size: 1rem; font-weight: 600; color: var(--navy); background: white; cursor: pointer; outline: none; transition: border-color 0.2s; }
+  .region-selector:focus { border-color: var(--orange); }
+  .region-selector:hover { border-color: var(--navy-light); }
+  .detail-card { border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+  .detail-card-green { background: #F0FDF4; border-left: 4px solid var(--green); }
+  .detail-card-blue { background: #EFF6FF; border-left: 4px solid var(--navy-light); }
+  .detail-card-amber { background: #FFFBEB; border-left: 4px solid var(--amber); }
+  .detail-card-red { background: #FEF2F2; border-left: 4px solid var(--red); }
+  .detail-card-orange { background: #FFF7ED; border-left: 4px solid var(--orange); }
+  .detail-card h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.5rem; }
+  .detail-card p { font-size: 0.85rem; line-height: 1.5; color: #374151; }
+  .detail-card ul { font-size: 0.85rem; line-height: 1.6; color: #374151; padding-left: 1.2rem; }
+  .detail-card ul li { margin-bottom: 0.25rem; }
+  .metric-mini { display: flex; flex-direction: column; align-items: center; padding: 0.75rem; border-radius: 8px; background: white; border: 1px solid var(--border); }
+  .metric-mini-value { font-size: 1.4rem; font-weight: 800; }
+  .metric-mini-label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; color: var(--gray); margin-top: 0.15rem; }
+  .btn-download { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; border: none; transition: all 0.2s; background: var(--navy); color: white; }
+  .btn-download:hover { background: var(--navy-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(27,41,86,0.3); }
+  .btn-download:disabled { background: #CBD5E1; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-download svg { width: 18px; height: 18px; }
+  .logo-img { height: 48px; width: auto; mix-blend-mode: screen; }
+  .logo-fallback { width: 44px; height: 44px; background: var(--orange); border-radius: 8px; display: none; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; color: white; }
+  @media (max-width: 768px) { .roadmap-arrow { display: none; } .roadmap-step { min-width: 100%; } .logo-img { height: 36px; } }
+</style>
+</head>
+<body class="text-gray-800">
+
+<header class="bg-[#1B2956] text-white px-6 py-4 shadow-lg sticky top-0 z-50">
+  <div class="max-w-[1600px] mx-auto flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-4">
+      <img src="https://adapta-one-prod.s3.sa-east-1.amazonaws.com/luc.dels%40gmail.com/png/Logotipo_-_SENAI_-_Completo.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA3FLD6RMYLYFE2L2Q%2F20260810%2Fsa-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260810T163824Z&X-Amz-Expires=3600&X-Amz-Signature=baa6114c29821575c2c2c3a0e4d43969bfb16dcd1a78ce2d0ef1ae8883c0dacc&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject" alt="SENAI" id="senaiLogoImg" class="logo-img" crossorigin="anonymous" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='flex';">
+      <div id="logoFallback" class="logo-fallback">S</div>
+      <div>
+        <h1 class="text-lg font-bold leading-tight">SENAI RS | Market Share CAGED</h1>
+        <p class="text-xs text-blue-200">Aprendizagem Industrial — 2º Trimestre 2026 — Uso Interno Confidencial</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-6 text-sm">
+      <div class="text-right"><p class="text-blue-200 text-xs">Market Share Atual</p><p class="text-2xl font-black text-[#00A859]">67,83%</p></div>
+      <div class="w-px h-10 bg-blue-700"></div>
+      <div class="text-right"><p class="text-blue-200 text-xs">Meta Estratégica</p><p class="text-2xl font-black text-white">80%</p></div>
+      <div class="w-px h-10 bg-blue-700"></div>
+      <div class="text-right"><p class="text-blue-200 text-xs">Gap</p><p class="text-2xl font-black text-[#F58220]">12,17 p.p.</p></div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+
+  <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 fade-in">
+    <div class="kpi-card kpi-navy"><p class="kpi-label">Market Share CAGED</p><p class="kpi-value text-[#1B2956]">67,83%</p><p class="kpi-sub">2 em cada 3 contratos formais do RS</p></div>
+    <div class="kpi-card kpi-green"><p class="kpi-label">Contratos Ativos</p><p class="kpi-value text-[#00A859]">14.635</p><p class="kpi-sub">SOM — Serviceable Obtainable Market</p></div>
+    <div class="kpi-card kpi-navy"><p class="kpi-label">Cotas CAGED</p><p class="kpi-value text-[#1B2956]">21.577</p><p class="kpi-sub">SAM — Estoque declarado no CAGED</p></div>
+    <div class="kpi-card kpi-orange"><p class="kpi-label">Alunos Ativos</p><p class="kpi-value text-[#F58220]">15.705</p><p class="kpi-sub">Base total de estudantes</p></div>
+    <div class="kpi-card kpi-green"><p class="kpi-label">Formalização</p><p class="kpi-value text-[#00A859]">93,19%</p><p class="kpi-sub">Alunos com contrato ativo</p></div>
+    <div class="kpi-card kpi-red"><p class="kpi-label">Gap de Mercado</p><p class="kpi-value text-[#E63946]">6.942</p><p class="kpi-sub">Cotas não capturadas (SAM - SOM)</p></div>
+  </section>
+
+  <section class="insight-box fade-in flex items-center justify-between flex-wrap gap-4">
+    <div class="flex items-center gap-4">
+      <span class="insight-num">01</span>
+      <div>
+        <p class="text-xs text-blue-200 uppercase tracking-wider font-semibold">Quick Win — Ganho Imediato</p>
+        <p class="text-lg font-bold mt-1">1.070 alunos sem contrato representam +4,96 p.p. de Market Share em 30 dias, sem investimento adicional.</p>
+      </div>
+    </div>
+    <div class="flex gap-3">
+      <div class="text-center px-4 py-2 bg-white/10 rounded-lg"><p class="text-2xl font-black text-[#F58220]">1.070</p><p class="text-xs text-blue-200">Alunos para formalizar</p></div>
+      <div class="text-center px-4 py-2 bg-white/10 rounded-lg"><p class="text-2xl font-black text-[#00A859]">+4,96</p><p class="text-xs text-blue-200">p.p. de ganho</p></div>
+      <div class="text-center px-4 py-2 bg-white/10 rounded-lg"><p class="text-2xl font-black text-white">30d</p><p class="text-xs text-blue-200">Prazo de execução</p></div>
+    </div>
+  </section>
+
+  <section class="fade-in">
+    <h2 class="section-title">Dimensionamento de Mercado — TAM / SAM / SOM</h2>
+    <div class="chart-container">
+      <div class="flex flex-col gap-2 items-center">
+        <div class="funnel-step rounded-lg" style="background: #1B2956; width: 100%;"><div><p class="funnel-label">TAM — Total Addressable Market</p><p class="funnel-desc">Todas as cotas obrigatórias do RS</p></div><p class="funnel-value">24.528</p></div>
+        <div class="funnel-step rounded-lg" style="background: #2E5A88; width: 88%;"><div><p class="funnel-label">SAM — Serviceable Available Market</p><p class="funnel-desc">Estoque declarado no CAGED</p></div><p class="funnel-value">21.577</p></div>
+        <div class="funnel-step rounded-lg" style="background: #00A859; width: 60%;"><div><p class="funnel-label">SOM — Serviceable Obtainable Market</p><p class="funnel-desc">Aprendizes com contrato ativo</p></div><p class="funnel-value">14.635</p></div>
+        <div class="funnel-step rounded-lg" style="background: #E63946; width: 29%;"><div><p class="funnel-label">Gap SAM-SOM</p><p class="funnel-desc">Market Share não capturado</p></div><p class="funnel-value">6.942</p></div>
+        <div class="funnel-step rounded-lg" style="background: #F58220; width: 12%;"><div><p class="funnel-label">Gap TAM-SAM</p><p class="funnel-desc">Potencial MTE não declarado</p></div><p class="funnel-value">2.951</p></div>
+      </div>
+      <div class="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-[#1B2956]"><strong>Insight:</strong> O maior potencial de crescimento está dentro do mercado já existente e mensurado pelo CAGED. O gap SAM-SOM (6.942 cotas) representa a oportunidade imediata de expansão sem necessidade de criar novo mercado. O MS por Potencial MTE (59,67%) é inferior ao MS CAGED (67,83%) porque o TAM (24.528) é maior que o SAM (21.577).</div>
+    </div>
+  </section>
+
+  <section class="fade-in">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <h2 class="section-title mb-0">Análise Regional — Market Share por Sub-região</h2>
+      <div class="flex gap-2 flex-wrap" role="group" aria-label="Filtro de região">
+        <button class="tab-btn active" onclick="filterRegion('all', this)" aria-pressed="true">Todas</button>
+        <button class="tab-btn" onclick="filterRegion('lider', this)" aria-pressed="false">Líderes</button>
+        <button class="tab-btn" onclick="filterRegion('consolidada', this)" aria-pressed="false">Consolidadas</button>
+        <button class="tab-btn" onclick="filterRegion('desenvolvimento', this)" aria-pressed="false">Em Desenvolvimento</button>
+        <button class="tab-btn" onclick="filterRegion('critica', this)" aria-pressed="false">Críticas</button>
+      </div>
+    </div>
+    <div class="chart-container"><div style="height: 480px;"><canvas id="regionalChart" role="img" aria-label="Gráfico de Market Share por sub-região"></canvas></div></div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+      <div class="kpi-card kpi-green text-center"><p class="kpi-label">Líderes (≥80%)</p><p class="text-2xl font-black text-[#00A859]">5</p><p class="kpi-sub">MS Médio: 87,18% | Gap: 636</p></div>
+      <div class="kpi-card kpi-navy text-center"><p class="kpi-label">Consolidadas (65-79%)</p><p class="text-2xl font-black text-[#2E5A88]">6</p><p class="kpi-sub">MS Médio: 71,11% | Gap: 2.419</p></div>
+      <div class="kpi-card kpi-amber text-center"><p class="kpi-label">Em Desenvolvimento (50-64%)</p><p class="text-2xl font-black text-[#F39C12]">6</p><p class="kpi-sub">MS Médio: 55,52% | Gap: 2.680</p></div>
+      <div class="kpi-card kpi-red text-center"><p class="kpi-label">Críticas (&lt;50%)</p><p class="text-2xl font-black text-[#E63946]">2</p><p class="kpi-sub">MS Médio: 38,14% | Gap: 1.207</p></div>
+    </div>
+  </section>
+
+  <section class="fade-in" id="regionDetailSection">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <h2 class="section-title mb-0">Análise Aprofundada por Sub-região — Painel do Gestor</h2>
+      <button class="btn-download" id="downloadPdfBtn" onclick="downloadRegionPDF()" disabled aria-label="Baixar relatório em PDF">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+        </svg>
+        Baixar Relatório PDF
+      </button>
+    </div>
+    <div class="chart-container">
+      <p class="text-sm text-gray-500 mb-3">Selecione uma sub-região para acessar estratégias, insights, análise de riscos e recomendações personalizadas. Após a seleção, clique em "Baixar Relatório PDF" para exportar o painel.</p>
+      <select class="region-selector mb-4" id="regionSelect" onchange="showRegionDetail(this.value)" aria-label="Selecione uma sub-região">
+        <option value="">— Selecione sua sub-região —</option>
+        <optgroup label="Líderes (≥80%)">
+          <option value="Vale dos Sinos 2">Vale dos Sinos 2 — 95,36%</option>
+          <option value="Serra 2">Serra 2 — 93,07%</option>
+          <option value="Vale dos Sinos 1">Vale dos Sinos 1 — 83,89%</option>
+          <option value="Serra 3">Serra 3 — 83,18%</option>
+          <option value="Vale do Taquari 1">Vale do Taquari 1 — 80,42%</option>
+        </optgroup>
+        <optgroup label="Consolidadas (65-79%)">
+          <option value="Serra 1">Serra 1 — 77,54%</option>
+          <option value="Metropolitana 2">Metropolitana 2 — 73,17%</option>
+          <option value="Vale dos Sinos 3">Vale dos Sinos 3 — 72,84%</option>
+          <option value="Encosta da Serra">Encosta da Serra — 68,47%</option>
+          <option value="Sul">Sul — 67,71%</option>
+          <option value="Norte 2">Norte 2 — 66,93%</option>
+        </optgroup>
+        <optgroup label="Em Desenvolvimento (50-64%)">
+          <option value="Noroeste 1">Noroeste 1 — 58,36%</option>
+          <option value="Vale do Taquari 2">Vale do Taquari 2 — 57,07%</option>
+          <option value="Norte 1">Norte 1 — 56,97%</option>
+          <option value="Noroeste 2">Noroeste 2 — 55,43%</option>
+          <option value="Vale do Rio Pardo">Vale do Rio Pardo — 55,22%</option>
+          <option value="Metropolitana 3">Metropolitana 3 — 50,07%</option>
+        </optgroup>
+        <optgroup label="Críticas (<50%)">
+          <option value="Metropolitana 1">Metropolitana 1 — 46,92%</option>
+          <option value="Centro">Centro — 29,36%</option>
+        </optgroup>
+      </select>
+      <div id="regionDetailContent">
+        <div class="text-center py-12 text-gray-400">
+          <p class="text-lg font-semibold">Selecione uma sub-região acima</p>
+          <p class="text-sm mt-1">O painel exibirá métricas, estratégias, riscos e recomendações específicas</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 fade-in">
+    <div>
+      <h2 class="section-title">Anatomia do Gap — Top 10 Regiões (Pareto)</h2>
+      <div class="chart-container">
+        <div style="height: 380px;"><canvas id="paretoChart" role="img" aria-label="Gráfico de Pareto do gap de mercado"></canvas></div>
+        <div class="mt-3 p-3 bg-orange-50 rounded-lg text-sm text-[#1B2956]"><strong>Princípio de Pareto:</strong> As 6 primeiras regiões concentram 50,34% do gap total. A estratégia deve priorizar impacto antes de abrangência.</div>
+      </div>
+    </div>
+    <div>
+      <h2 class="section-title">Top 5 — Oportunidades de Formalização (Quick Win)</h2>
+      <div class="chart-container">
+        <div style="height: 380px;"><canvas id="formalizacaoChart" role="img" aria-label="Gráfico de oportunidades de formalização"></canvas></div>
+        <div class="mt-3 p-3 bg-green-50 rounded-lg text-sm text-[#1B2956]"><strong>814 alunos</strong> sem contrato nestas 5 regiões. Ação de maior retorno e menor custo disponível para a rede neste momento.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="fade-in">
+    <h2 class="section-title">Roadmap Estratégico — Jornada do Market Share (67,83% → 80%)</h2>
+    <div class="chart-container">
+      <div class="flex items-stretch gap-2 mb-4 flex-wrap">
+        <div class="roadmap-step" style="background: #E63946; color: white;"><p class="text-xs uppercase tracking-wider opacity-80 font-semibold">Atual</p><p class="text-3xl font-black mt-1">67,83%</p><p class="text-xs opacity-70 mt-1">Diagnóstico</p></div>
+        <div class="roadmap-arrow">→</div>
+        <div class="roadmap-step" style="background: #F58220; color: white;"><p class="text-xs uppercase tracking-wider opacity-80 font-semibold">Horizonte 1 — 30 dias</p><p class="text-3xl font-black mt-1">72,79%</p><p class="text-xs opacity-70 mt-1">Formalização (Quick Win)</p></div>
+        <div class="roadmap-arrow">→</div>
+        <div class="roadmap-step" style="background: #2E5A88; color: white;"><p class="text-xs uppercase tracking-wider opacity-80 font-semibold">Horizonte 2 — 180 dias</p><p class="text-3xl font-black mt-1">75-77%</p><p class="text-xs opacity-70 mt-1">Captação e Expansão</p></div>
+        <div class="roadmap-arrow">→</div>
+        <div class="roadmap-step" style="background: #00A859; color: white;"><p class="text-xs uppercase tracking-wider opacity-80 font-semibold">Horizonte 3 — 12 meses</p><p class="text-3xl font-black mt-1">80%</p><p class="text-xs opacity-70 mt-1">Diversificação e Sustentabilidade</p></div>
+      </div>
+      <div style="height: 200px;"><canvas id="roadmapChart" role="img" aria-label="Gráfico do roadmap estratégico"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 fade-in">
+    <div>
+      <h2 class="section-title">Gestão de Risco — Concentração Empresarial (19 Sub-regiões)</h2>
+      <div class="chart-container">
+        <div style="height: 480px;"><canvas id="riskChart" role="img" aria-label="Gráfico de concentração empresarial por região"></canvas></div>
+        <div class="mt-3 p-3 bg-red-50 rounded-lg text-sm text-[#1B2956]"><strong>Meta:</strong> menos de 7 alunos por CNPJ. Noroeste 2 (9,9) e Norte 1 (9,8) estão em alto risco de concentração. Diversificação é prioridade estratégica.</div>
+      </div>
+    </div>
+    <div>
+      <h2 class="section-title">3 Alavancas Estratégicas de Crescimento</h2>
+      <div class="chart-container space-y-4">
+        <div class="border-l-4 border-[#F58220] pl-4 py-2"><div class="flex items-center justify-between"><p class="font-bold text-[#1B2956]">Alavanca 1 — Formalização Contratual</p><span class="badge badge-green">ROI Imediato</span></div><p class="text-sm text-gray-600 mt-1">Formalizar 1.070 alunos sem contrato em 30 dias. Ganho de +4,96 p.p. sem investimento adicional.</p></div>
+        <div class="border-l-4 border-[#2E5A88] pl-4 py-2"><div class="flex items-center justify-between"><p class="font-bold text-[#1B2956]">Alavanca 2 — Captação de Mercado</p><span class="badge badge-blue">Médio Prazo</span></div><p class="text-sm text-gray-600 mt-1">Recuperação de 5.872 cotas estruturais em 60-180 dias. Expansão regional focada nas top 10 regiões de gap.</p></div>
+        <div class="border-l-4 border-[#00A859] pl-4 py-2"><div class="flex items-center justify-between"><p class="font-bold text-[#1B2956]">Alavanca 3 — Diversificação de CNPJs</p><span class="badge badge-amber">Sustentabilidade</span></div><p class="text-sm text-gray-600 mt-1">Ampliação da base empresarial em 6 meses. Meta de menos de 7 alunos por CNPJ para reduzir vulnerabilidade.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="fade-in">
+    <h2 class="section-title">Detalhamento Regional — 19 Sub-regiões (Dados Oficiais do Relatório)</h2>
+    <div class="chart-container overflow-x-auto scroll-hint">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Sub-região</th><th>Market Share</th><th>Faixa</th><th>Alunos</th><th>CNPJs</th><th>C/ Contrato</th><th>Sem Contrato</th><th>Formalização</th><th>Cotas CAGED</th><th>Gap</th><th>Alunos/CNPJ</th><th>Risco</th></tr></thead>
+        <tbody id="regionalTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="fade-in">
+    <h2 class="section-title">Playbook Estratégico Regional — Recomendações por Sub-região</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="chart-container border-t-4 border-[#00A859]">
+        <p class="font-bold text-[#00A859] text-sm uppercase tracking-wide">Proteger e Replicar</p>
+        <p class="text-xs text-gray-500 mb-3">Regiões Líderes (MS ≥ 80%) — 5 regiões | MS médio: 87,18%</p>
+        <ul class="text-sm space-y-1.5 text-gray-700"><li>• Formalizar pendências contratuais</li><li>• Diversificar empresas contratantes</li><li>• Transformar em benchmark permanente</li><li>• Replicar boas práticas na rede</li></ul>
+        <div class="playbook-region"><strong>Vale dos Sinos 2</strong> (95,36%): 262 alunos sem contrato. Formalização eleva MS para 131,11%.<br><strong>Serra 2</strong> (93,07%): 99,88% formalização. Modelo de referência operacional.<br><strong>Vale dos Sinos 1</strong> (83,89%): 105 alunos pendentes. CNPJ 3,0 (mais pulverizada).<br><strong>Serra 3</strong> (83,18%): Maior volume (1.403 alunos). CNPJ 8,1 — diversificar.<br><strong>Vale do Taquari 1</strong> (80,42%): 98,92% formalização. CNPJ 7,9 — monitorar.</div>
+      </div>
+      <div class="chart-container border-t-4 border-[#2E5A88]">
+        <p class="font-bold text-[#2E5A88] text-sm uppercase tracking-wide">Acelerar para Liderança</p>
+        <p class="text-xs text-gray-500 mb-3">Consolidadas (65-79%) — 6 regiões | MS médio: 71,11%</p>
+        <ul class="text-sm space-y-1.5 text-gray-700"><li>• Plano agressivo de expansão</li><li>• Replicar práticas comerciais dos líderes</li><li>• Alcançar faixa de liderança (80%)</li><li>• Expandir seletivamente</li></ul>
+        <div class="playbook-region"><strong>Serra 1</strong> (77,54%): Maior gap da faixa (643). 239 sem contrato. Maior impacto individual.<br><strong>Metropolitana 2</strong> (73,17%): 78 pendentes. Formalização ultrapassa 80%.<br><strong>Vale dos Sinos 3</strong> (72,84%): 99,02% formalização. Gap estrutural de 339.<br><strong>Encosta da Serra</strong> (68,47%): 100% formalização. CNPJ 8,7 — diversificar.<br><strong>Sul</strong> (67,71%): 98 sem contrato (15,3%). CNPJ 6,5.<br><strong>Norte 2</strong> (66,93%): 99,85% formalização. Gap 335 estrutural.</div>
+      </div>
+      <div class="chart-container border-t-4 border-[#F39C12]">
+        <p class="font-bold text-[#F39C12] text-sm uppercase tracking-wide">Expandir e Desenvolver</p>
+        <p class="text-xs text-gray-500 mb-3">Em Desenvolvimento (50-64%) — 6 regiões | MS médio: 55,52%</p>
+        <ul class="text-sm space-y-1.5 text-gray-700"><li>• Expandir atuação em novos segmentos</li><li>• Fortalecer relacionamento empresarial</li><li>• Captação comercial intensiva</li><li>• Recuperação de cotas não atendidas</li></ul>
+        <div class="playbook-region"><strong>Noroeste 1</strong> (58,36%): 95,53% formalização. CNPJ 7,3 — atenção.<br><strong>Vale do Taquari 2</strong> (57,07%): Maior gap da faixa (565). CNPJ 7,0.<br><strong>Norte 1</strong> (56,97%): CNPJ 9,8 — alto risco. Diversificar urgente.<br><strong>Noroeste 2</strong> (55,43%): 100% formalização. CNPJ 9,9 — maior da rede.<br><strong>Vale do Rio Pardo</strong> (55,22%): 97,89% formalização. CNPJ 7,3.<br><strong>Metropolitana 3</strong> (50,07%): 110 sem contrato. Maior ganho de formalização.</div>
+      </div>
+      <div class="chart-container border-t-4 border-[#E63946]">
+        <p class="font-bold text-[#E63946] text-sm uppercase tracking-wide">Recuperar Estruturalmente</p>
+        <p class="text-xs text-gray-500 mb-3">Críticas (MS &lt; 50%) — 2 regiões | MS médio: 38,14%</p>
+        <ul class="text-sm space-y-1.5 text-gray-700"><li>• Diagnóstico territorial completo</li><li>• Reposicionamento comercial</li><li>• Plano de recuperação estrutural</li><li>• Revisão completa da estratégia</li></ul>
+        <div class="playbook-region"><strong>Metropolitana 1</strong> (46,92%): Maior gap absoluto da rede (697 cotas). 80 alunos sem contrato. CNPJ 3,6 — carteira pulverizada, mas baixa penetração. Foco: conversão comercial.<br><strong>Centro</strong> (29,36%): Menor MS da rede. 510 cotas de gap. CNPJ 4,3. Foco: reposicionamento comercial completo e diagnóstico de causa raiz.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="fade-in"><div class="chart-container bg-gray-50"><p class="text-xs text-gray-500 leading-relaxed"><strong>Fonte:</strong> Relatório Analítico MarketShare — Aprendizagem Industrial, 2º Trimestre de 2026 (acumulado até 30/06/2026), Gerência de Educação Profissional e Superior SENAI RS. <strong>Metodologia:</strong> MarketShare CAGED (%) = Alunos com Contrato ÷ Estoque Mensal CAGED × 100. O MS por Potencial MTE (59,67%) utiliza o TAM (24.528) como denominador, enquanto o MS CAGED (67,83%) utiliza o SAM (21.577). <strong>Nota:</strong> Total de CNPJs ativos: 2.305. Total de alunos: 15.705. Total de contratos: 14.635.</p></div></section>
+
+  <footer class="text-center py-6 text-sm text-gray-400">
+    <p class="font-semibold text-[#1B2956]">SENAI RS — Gerência de Educação Profissional e Superior</p>
+    <p>Dashboard Executivo | Market Share CAGED | Aprendizagem Industrial | 2º Trimestre 2026</p>
+    <p class="text-xs mt-1">Uso Interno — Confidencial</p>
+  </footer>
+
+</main>
+
+<script>
+// ===== DATA OFICIAL =====
+var regionsData = [
+  { rank: 1, name: "Vale dos Sinos 2", ms: 95.36, faixa: "lider", alunos: 961, cnpjs: 170, contratos: 699, semContrato: 262, formalizacao: 72.74, cotas: 733, gap: 34, cnpj: 4.1, risco: "Baixo" },
+  { rank: 2, name: "Serra 2", ms: 93.07, faixa: "lider", alunos: 861, cnpjs: 221, contratos: 860, semContrato: 1, formalizacao: 99.88, cotas: 924, gap: 64, cnpj: 3.9, risco: "Baixo" },
+  { rank: 3, name: "Vale dos Sinos 1", ms: 83.89, faixa: "lider", alunos: 506, cnpjs: 132, contratos: 401, semContrato: 105, formalizacao: 79.25, cotas: 478, gap: 77, cnpj: 3.0, risco: "Baixo" },
+  { rank: 4, name: "Serra 3", ms: 83.18, faixa: "lider", alunos: 1403, cnpjs: 172, contratos: 1400, semContrato: 3, formalizacao: 99.79, cotas: 1683, gap: 283, cnpj: 8.1, risco: "Médio" },
+  { rank: 5, name: "Vale do Taquari 1", ms: 80.42, faixa: "lider", alunos: 739, cnpjs: 93, contratos: 731, semContrato: 8, formalizacao: 98.92, cotas: 909, gap: 178, cnpj: 7.9, risco: "Médio" },
+  { rank: 6, name: "Serra 1", ms: 77.54, faixa: "consolidada", alunos: 2459, cnpjs: 393, contratos: 2220, semContrato: 239, formalizacao: 90.28, cotas: 2863, gap: 643, cnpj: 5.7, risco: "Baixo" },
+  { rank: 7, name: "Metropolitana 2", ms: 73.17, faixa: "consolidada", alunos: 888, cnpjs: 170, contratos: 810, semContrato: 78, formalizacao: 91.22, cotas: 1107, gap: 297, cnpj: 4.8, risco: "Baixo" },
+  { rank: 8, name: "Vale dos Sinos 3", ms: 72.84, faixa: "consolidada", alunos: 918, cnpjs: 146, contratos: 909, semContrato: 9, formalizacao: 99.02, cotas: 1248, gap: 339, cnpj: 6.2, risco: "Baixo" },
+  { rank: 9, name: "Encosta da Serra", ms: 68.47, faixa: "consolidada", alunos: 1188, cnpjs: 137, contratos: 1188, semContrato: 0, formalizacao: 100.00, cotas: 1735, gap: 547, cnpj: 8.7, risco: "Médio" },
+  { rank: 10, name: "Sul", ms: 67.71, faixa: "consolidada", alunos: 639, cnpjs: 83, contratos: 541, semContrato: 98, formalizacao: 84.66, cotas: 799, gap: 258, cnpj: 6.5, risco: "Baixo" },
+  { rank: 11, name: "Norte 2", ms: 66.93, faixa: "consolidada", alunos: 679, cnpjs: 104, contratos: 678, semContrato: 1, formalizacao: 99.85, cotas: 1013, gap: 335, cnpj: 6.5, risco: "Baixo" },
+  { rank: 12, name: "Noroeste 1", ms: 58.36, faixa: "desenvolvimento", alunos: 515, cnpjs: 67, contratos: 492, semContrato: 23, formalizacao: 95.53, cotas: 843, gap: 351, cnpj: 7.3, risco: "Médio" },
+  { rank: 13, name: "Vale do Taquari 2", ms: 57.07, faixa: "desenvolvimento", alunos: 769, cnpjs: 108, contratos: 751, semContrato: 18, formalizacao: 97.66, cotas: 1316, gap: 565, cnpj: 7.0, risco: "Baixo" },
+  { rank: 14, name: "Norte 1", ms: 56.97, faixa: "desenvolvimento", alunos: 493, cnpjs: 49, contratos: 482, semContrato: 11, formalizacao: 97.77, cotas: 846, gap: 364, cnpj: 9.8, risco: "Alto" },
+  { rank: 15, name: "Noroeste 2", ms: 55.43, faixa: "desenvolvimento", alunos: 664, cnpjs: 67, contratos: 664, semContrato: 0, formalizacao: 100.00, cotas: 1198, gap: 534, cnpj: 9.9, risco: "Alto" },
+  { rank: 16, name: "Vale do Rio Pardo", ms: 55.22, faixa: "desenvolvimento", alunos: 616, cnpjs: 83, contratos: 603, semContrato: 13, formalizacao: 97.89, cotas: 1092, gap: 489, cnpj: 7.3, risco: "Médio" },
+  { rank: 17, name: "Metropolitana 3", ms: 50.07, faixa: "desenvolvimento", alunos: 488, cnpjs: 86, contratos: 378, semContrato: 110, formalizacao: 77.46, cotas: 755, gap: 377, cnpj: 4.4, risco: "Baixo" },
+  { rank: 18, name: "Metropolitana 1", ms: 46.92, faixa: "critica", alunos: 696, cnpjs: 169, contratos: 616, semContrato: 80, formalizacao: 88.51, cotas: 1313, gap: 697, cnpj: 3.6, risco: "Baixo" },
+  { rank: 19, name: "Centro", ms: 29.36, faixa: "critica", alunos: 223, cnpjs: 49, contratos: 212, semContrato: 11, formalizacao: 95.07, cotas: 722, gap: 510, cnpj: 4.3, risco: "Baixo" }
+];
+
+var faixaColors = { lider: "#00A859", consolidada: "#2E5A88", desenvolvimento: "#F39C12", critica: "#E63946" };
+var faixaLabels = { lider: "Líder", consolidada: "Consolidada", desenvolvimento: "Desenvolvimento", critica: "Crítica" };
+
+var regionDetails = {
+  "Vale dos Sinos 2": { prioridade: "Máxima — Formalização", prioridadeColor: "badge-red", insight: "Maior Market Share da rede (95,36%), mas com 262 alunos sem contrato (27,3% da base). A formalização desses alunos elevaria o MS para 131,11%, representando o maior ganho absoluto da rede (+35,75 p.p.). A região combina liderança em cobertura com a maior oportunidade de crescimento imediato.", estrategias: ["Formalizar imediatamente os 262 alunos sem contrato — maior quick win individual da rede","Manter carteira pulverizada (4,1 alunos/CNPJ) — segunda melhor diversificação da rede","Consolidar relacionamento com empresas de alto potencial para expansão futura","Atuar como benchmark permanente de cobertura de mercado para toda a rede","Expandir presença em segmentos econômicos ainda não explorados"], riscos: "Baixo risco de concentração (4,1 alunos/CNPJ). Carteira bem diversificada com 170 empresas ativas. Não há vulnerabilidade estrutural relevante.", meta180: "100% de formalização + manter MS ≥ 95%", responsavel: "Gestão da Sub-região", prazo: "30 dias para formalização" },
+  "Serra 2": { prioridade: "Proteção", prioridadeColor: "badge-green", insight: "Segunda melhor performance da rede (93,07%) com 99,88% de formalização — apenas 1 aluno sem contrato. Modelo de referência operacional e comercial. A expansão depende exclusivamente de captação de novas empresas, pois o potencial de formalização está esgotado.", estrategias: ["Preservar a base atual de contratos e relacionamento empresarial","Ampliar gradualmente a cobertura do mercado com captação seletiva","Atuar como benchmark para práticas de gestão comercial e relacionamento","Disseminar boas práticas operacionais nas regiões consolidadas e em desenvolvimento","Monitorar variações do estoque CAGED para identificar novas oportunidades"], riscos: "Baixíssimo risco. Carteira diversificada (3,9 alunos/CNPJ) com 221 empresas. Formalização praticamente integral. Cenário mais favorável e estável da rede.", meta180: "Manter MS ≥ 93% + preservar diversificação", responsavel: "Gestão da Sub-região", prazo: "Monitoramento contínuo" },
+  "Vale dos Sinos 1": { prioridade: "Alta — Formalização", prioridadeColor: "badge-amber", insight: "MS de 83,89% com 105 alunos pendentes (20,8% da base). A formalização elevaria o MS para 105,86% (+21,97 p.p.). Possui a carteira mais pulverizada da rede (3,0 alunos/CNPJ), combinando alta diversificação com elevado potencial de ganho imediato.", estrategias: ["Formalizar os 105 alunos sem contrato — terceira maior oportunidade de quick win da rede","Aproveitar a carteira diversificada para ampliar ocupação nas empresas já atendidas","Manter a qualidade do relacionamento com a carteira atual de 132 empresas","Identificar segmentos econômicos ainda não explorados na região","Utilizar a pulverização como base para programas de expansão comercial"], riscos: "Baixíssimo risco de concentração (3,0 alunos/CNPJ). Carteira mais pulverizada da rede. Não há vulnerabilidade estrutural.", meta180: "≥ 95% de MS + 100% formalização", responsavel: "Gestão da Sub-região", prazo: "30 dias para formalização" },
+  "Serra 3": { prioridade: "Média — Diversificação", prioridadeColor: "badge-amber", insight: "MS de 83,18% com 99,79% de formalização (apenas 3 alunos pendentes). Maior volume absoluto entre os líderes (1.403 alunos). No entanto, apresenta CNPJ de 8,1 (risco médio), indicando dependência relevante de poucos contratantes.", estrategias: ["Diversificar urgentemente a carteira empresarial — reduzir de 8,1 para abaixo de 7 alunos/CNPJ","Utilizar a posição de liderança para ampliar a base de empresas parceiras","Expandir seletivamente em segmentos econômicos ainda não atendidos","Proteger a carteira atual de grandes empregadores","Monitorar concentração mensalmente"], riscos: "Risco médio de concentração (8,1 alunos/CNPJ). 1.400 alunos distribuídos em apenas 172 empresas. A perda de poucos contratos pode impactar significativamente o MS. Diversificação é prioridade.", meta180: "≥ 85% MS + CNPJ < 7", responsavel: "Gestão da Sub-região", prazo: "6 meses para diversificação" },
+  "Vale do Taquari 1": { prioridade: "Média — Diversificação", prioridadeColor: "badge-amber", insight: "MS de 80,42% com 98,92% de formalização (apenas 8 pendentes). CNPJ de 7,9 está no limite do aceitável. O avanço do indicador depende prioritariamente da expansão da base de empresas, uma vez que o potencial de formalização está praticamente esgotado.", estrategias: ["Ampliar a base de empresas parceiras antes que a concentração ultrapasse 8/CNPJ","Expandir seletivamente em segmentos ainda não atendidos","Prospecção de empresas de médio porte com potencial de contratação recorrente","Manter a qualidade da formalização (98,92%)","Monitorar concentração empresarial mensalmente"], riscos: "Risco médio (7,9 alunos/CNPJ). 731 alunos em 93 empresas. Próximo do limite crítico. Ação preventiva de diversificação é necessária.", meta180: "≥ 82% MS + CNPJ < 7", responsavel: "Gestão da Sub-região", prazo: "6 meses para diversificação" },
+  "Serra 1": { prioridade: "Máxima — Formalização + Captação", prioridadeColor: "badge-red", insight: "Maior operação da rede (2.459 alunos) com MS de 77,54%. Possui o maior gap absoluto entre as consolidadas (643 cotas) e 239 alunos sem contrato. A formalização elevaria o MS para 85,89%, ingressando na faixa de liderança. Trata-se da principal oportunidade individual de crescimento da rede.", estrategias: ["Formalizar os 239 alunos sem contrato — segunda maior oportunidade de quick win da rede","Plano agressivo de expansão comercial para reduzir o gap de 643 cotas","Ampliação da base de empresas contratantes (atualmente 393 CNPJs)","Recuperação de cotas ociosas em empresas já atendidas","Atuação focada em setores econômicos com baixa penetração da Aprendizagem"], riscos: "Baixo risco de concentração (5,7 alunos/CNPJ). Carteira bem distribuída com 393 empresas. O desafio é de captação, não de diversificação.", meta180: "≥ 82% MS (líder via formalização)", responsavel: "Gestão da Sub-região", prazo: "30 dias formalização + 180 dias captação" },
+  "Metropolitana 2": { prioridade: "Alta — Formalização", prioridadeColor: "badge-amber", insight: "MS de 73,17% com 78 alunos sem contrato. A formalização elevaria o MS para 80,22%, ingressando na faixa de liderança. Carteira saudável (4,8 alunos/CNPJ). A região está muito próxima da meta estratégica.", estrategias: ["Formalizar os 78 alunos sem contrato — elevaria MS para 80,22% (faixa de liderança)","Replicar práticas comerciais das regiões líderes","Ampliar moderadamente a carteira de empresas","Manter a diversificação atual (4,8 alunos/CNPJ)","Monitorar estoque CAGED para identificar novas cotas"], riscos: "Baixo risco (4,8 alunos/CNPJ). Carteira diversificada com 170 empresas. Não há vulnerabilidade estrutural.", meta180: "≥ 80% MS (líder via formalização)", responsavel: "Gestão da Sub-região", prazo: "30 dias para formalização" },
+  "Vale dos Sinos 3": { prioridade: "Média — Captação", prioridadeColor: "badge-blue", insight: "MS de 72,84% com 99,02% de formalização (apenas 9 pendentes). O gap de 339 cotas é estrutural, exigindo captação de novas empresas. Há pouca margem para crescimento via formalização.", estrategias: ["Foco em prospecção de novas empresas — formalização praticamente esgotada","Ampliação da carteira de matrículas via captação comercial","Recuperação de cotas ociosas em empresas já atendidas","Manter a qualidade da formalização (99,02%)","Identificar segmentos econômicos subatendidos na região"], riscos: "Baixo risco (6,2 alunos/CNPJ). Carteira razoavelmente diversificada com 146 empresas.", meta180: "≥ 78% MS via captação estrutural", responsavel: "Gestão da Sub-região", prazo: "60-180 dias para captação" },
+  "Encosta da Serra": { prioridade: "Alta — Captação + Diversificação", prioridadeColor: "badge-amber", insight: "MS de 68,47% com 100% de formalização (nenhum aluno pendente). Gap de 547 cotas depende exclusivamente de expansão comercial. CNPJ de 8,7 indica risco médio de concentração que precisa ser tratado.", estrategias: ["Captação intensiva de novos contratos — única alavanca disponível (100% formalização)","Diversificação empresarial urgente — reduzir CNPJ de 8,7 para abaixo de 7","Expandir empresas de médio porte com potencial de contratação recorrente","Atuação focada em setores econômicos com baixa penetração","Recuperação de cotas ociosas"], riscos: "Risco médio (8,7 alunos/CNPJ). 1.188 alunos em apenas 137 empresas. A perda de poucos contratos pode impactar significativamente. Diversificação é prioritária.", meta180: "≥ 72% MS + CNPJ < 8", responsavel: "Gestão da Sub-região", prazo: "60-180 dias" },
+  "Sul": { prioridade: "Alta — Formalização + Captação", prioridadeColor: "badge-amber", insight: "MS de 67,71% com 98 alunos sem contrato (15,3% da base). A formalização elevaria o MS para 79,97%, aproximando-se da faixa de liderança. CNPJ saudável (6,5). Combina oportunidade de formalização com necessidade de captação.", estrategias: ["Formalizar os 98 alunos sem contrato — elevaria MS para 79,97%","Equilibrar formalização com ampliação da captação de novas empresas","Manter a diversificação atual (6,5 alunos/CNPJ)","Recuperação de cotas ociosas em empresas já atendidas","Monitorar estoque CAGED para novas oportunidades"], riscos: "Baixo risco (6,5 alunos/CNPJ). Carteira diversificada com 83 empresas. Não há vulnerabilidade estrutural.", meta180: "≥ 72% MS", responsavel: "Gestão da Sub-região", prazo: "30 dias formalização + 180 dias captação" },
+  "Norte 2": { prioridade: "Média — Captação", prioridadeColor: "badge-blue", insight: "MS de 66,93% com 99,85% de formalização (apenas 1 pendente). Gap de 335 cotas é estrutural. A redução do gap depende exclusivamente da expansão da carteira de empresas.", estrategias: ["Captação de novas empresas — única alavanca disponível (99,85% formalização)","Ampliação da carteira de matrículas via prospecção comercial","Manter a qualidade da formalização (99,85%)","Recuperação de cotas ociosas","Identificar segmentos econômicos subatendidos"], riscos: "Baixo risco (6,5 alunos/CNPJ). Carteira diversificada com 104 empresas.", meta180: "≥ 72% MS via captação estrutural", responsavel: "Gestão da Sub-região", prazo: "60-180 dias" },
+  "Noroeste 1": { prioridade: "Alta — Captação + Diversificação", prioridadeColor: "badge-amber", insight: "MS de 58,36% com 95,53% de formalização (23 pendentes). Gap de 351 cotas. CNPJ de 7,3 indica necessidade de atenção preventiva à concentração. A estratégia deve combinar captação com diversificação.", estrategias: ["Prospecção de novos CNPJs para ampliar a carteira (atualmente 67 empresas)","Captação estrutural para reduzir o gap de 351 cotas","Distribuir melhor os contratos entre empregadores — reduzir CNPJ de 7,3 para < 7","Formalizar os 23 alunos pendentes","Atuação focada em setores econômicos com baixa penetração"], riscos: "Risco médio (7,3 alunos/CNPJ). 492 alunos em 67 empresas. Acima da meta de 7. Ação preventiva necessária.", meta180: "≥ 65% MS + CNPJ < 7", responsavel: "Gestão da Sub-região", prazo: "60-180 dias" },
+  "Vale do Taquari 2": { prioridade: "Alta — Captação", prioridadeColor: "badge-amber", insight: "MS de 57,07% com 97,66% de formalização (18 pendentes). Possui o maior gap da faixa de desenvolvimento (565 cotas). O potencial de crescimento via formalização é reduzido, tornando a expansão comercial a principal alavanca.", estrategias: ["Captação intensiva de novos contratos — gap de 565 cotas é o maior da faixa","Ampliação da base de empresas contratantes (atualmente 108 CNPJs)","Recuperação de cotas ociosas em empresas já atendidas","Formalizar os 18 alunos pendentes","Diversificação preventiva (CNPJ 7,0 está no limite)"], riscos: "Baixo risco (7,0 alunos/CNPJ). No limite aceitável. Monitorar para evitar ultrapassar 7.", meta180: "≥ 65% MS", responsavel: "Gestão da Sub-região", prazo: "60-180 dias" },
+  "Norte 1": { prioridade: "Máxima — Diversificação + Captação", prioridadeColor: "badge-red", insight: "MS de 56,97% com 97,77% de formalização. CNPJ de 9,8 indica alto risco de concentração. A combinação de Market Share intermediário com alta dependência de poucos contratantes cria vulnerabilidade estratégica relevante.", estrategias: ["Diversificação urgente da base empresarial — reduzir CNPJ de 9,8 para abaixo de 8","Prospecção focada em empresas de médio porte ainda não atendidas","Captação estrutural para reduzir o gap de 364 cotas","Reduzir a exposição a oscilações da carteira atual","Formalizar os 11 alunos pendentes"], riscos: "Alto risco (9,8 alunos/CNPJ). 482 alunos em apenas 49 empresas. A perda de 2-3 grandes contratantes pode comprometer a operação. Diversificação imediata é prioritária.", meta180: "≥ 60% MS + CNPJ < 8", responsavel: "Gestão da Sub-região", prazo: "6 meses para diversificação" },
+  "Noroeste 2": { prioridade: "Máxima — Diversificação + Captação", prioridadeColor: "badge-red", insight: "MS de 55,43% com 100% de formalização (nenhum pendente). CNPJ de 9,9 é o mais alto da rede. A combinação de alta concentração, MS intermediário e ausência de alunos para formalizar torna a diversificação a única alavanca disponível.", estrategias: ["Plano imediato de diversificação — maior vulnerabilidade da rede (9,9 alunos/CNPJ)","Prospecção intensiva de novos CNPJs para reduzir dependência de poucos contratantes","Captação estrutural para reduzir o gap de 534 cotas","Atuação focada em setores econômicos com baixa penetração","Recuperação de cotas ociosas"], riscos: "Alto risco (9,9 alunos/CNPJ). Maior concentração da rede. 664 alunos em apenas 67 empresas. A perda de um grande contratante pode comprometer até 15% da operação. Diversificação urgente.", meta180: "≥ 60% MS + CNPJ < 8", responsavel: "Gestão da Sub-região", prazo: "6 meses para diversificação" },
+  "Vale do Rio Pardo": { prioridade: "Alta — Captação + Diversificação", prioridadeColor: "badge-amber", insight: "MS de 55,22% com 97,89% de formalização (13 pendentes). Gap de 489 cotas. CNPJ de 7,3 indica necessidade de atenção à concentração. A principal oportunidade está na ampliação da cobertura de mercado.", estrategias: ["Expansão da prospecção comercial — gap de 489 cotas é significativo","Diversificação preventiva — reduzir CNPJ de 7,3 para abaixo de 7","Ampliar base de empresas em segmentos econômicos pouco explorados","Formalizar os 13 alunos pendentes","Recuperação de cotas ociosas"], riscos: "Risco médio (7,3 alunos/CNPJ). 603 alunos em 83 empresas. Acima da meta de 7. Ação preventiva necessária.", meta180: "≥ 60% MS + CNPJ < 7", responsavel: "Gestão da Sub-região", prazo: "60-180 dias" },
+  "Metropolitana 3": { prioridade: "Máxima — Formalização + Captação", prioridadeColor: "badge-red", insight: "MS de 50,07% com 77,46% de formalização (110 pendentes). A formalização elevaria o MS para 64,64% (+14,57 p.p.), representando a maior transformação de posicionamento competitivo da rede. A região possui o maior potencial de ganho duplo: formalização + captação.", estrategias: ["Formalizar os 110 alunos sem contrato — maior potencial de transformação da rede (+14,57 p.p.)","Captação intensiva após formalização para sustentar o crescimento","Aumentar a ocupação das cotas disponíveis no mercado","Aproveitar a carteira pulverizada (4,4 alunos/CNPJ) como base para expansão","Recuperação estrutural do território"], riscos: "Baixo risco (4,4 alunos/CNPJ). Carteira diversificada com 86 empresas. A diversidade da carteira é um ativo estratégico para expansão.", meta180: "≥ 60% MS (via formalização + captação)", responsavel: "Gestão da Sub-região", prazo: "30 dias formalização + 180 dias captação" },
+  "Metropolitana 1": { prioridade: "Máxima — Recuperação Estrutural", prioridadeColor: "badge-red", insight: "MS de 46,92% — cobre menos da metade do estoque CAGED disponível. Maior gap absoluto da rede (697 cotas). Embora existam 80 alunos para formalizar, o principal desafio é estrutural: baixa penetração de mercado com carteira diversificada (3,6 alunos/CNPJ). O problema não é diversificação, é conversão comercial.", estrategias: ["Diagnóstico aprofundado: cobertura territorial, relacionamento com sindicatos, conversão comercial","Plano robusto de expansão comercial e fortalecimento da prospecção","Formalizar os 80 alunos pendentes (ganho de +6,09 p.p.)","Aumentar a conversão de empresas prospectadas","Avaliar competitividade frente a outras instituições ofertantes","Ampliação da capacidade de geração de novas turmas"], riscos: "Baixo risco de concentração (3,6 alunos/CNPJ). O problema não é diversificação, mas baixa penetração. Carteira pulverizada com 169 empresas, mas baixa ocupação por empresa.", meta180: "≥ 55% MS", responsavel: "Gestão da Sub-região", prazo: "Prioridade máxima — 12 meses" },
+  "Centro": { prioridade: "Máxima — Reposicionamento Estrutural", prioridadeColor: "badge-red", insight: "Menor Market Share da rede (29,36%), cobrindo menos de um terço do estoque CAGED. Gap de 510 cotas. CNPJ de 4,3 indica que o problema não é concentração, mas baixa ocupação do mercado potencial. Exige intervenção prioritária e reposicionamento comercial completo.", estrategias: ["Diagnóstico territorial completo: identificar causas estruturais do baixo MS","Reposicionamento comercial — revisão completa da estratégia de prospecção","Plano de recuperação estrutural com metas trimestrais","Formalizar os 11 alunos pendentes","Ampliação da carteira ativa de contratos","Fortalecimento da presença institucional no território"], riscos: "Baixo risco de concentração (4,3 alunos/CNPJ). O problema é estrutural: baixa cobertura de mercado, não concentração. 212 alunos em 49 empresas.", meta180: "≥ 40% MS", responsavel: "Gestão da Sub-região", prazo: "Prioridade máxima — 12 meses" }
+};
+
+var paretoData = [
+  { region: "Metropolitana 1", gap: 697, pct: 10.04, acum: 10.04 },
+  { region: "Serra 1", gap: 643, pct: 9.26, acum: 19.30 },
+  { region: "Vale do Taquari 2", gap: 565, pct: 8.14, acum: 27.44 },
+  { region: "Encosta da Serra", gap: 547, pct: 7.88, acum: 35.32 },
+  { region: "Noroeste 2", gap: 534, pct: 7.68, acum: 43.00 },
+  { region: "Centro", gap: 510, pct: 7.34, acum: 50.34 },
+  { region: "Vale do Rio Pardo", gap: 489, pct: 7.04, acum: 57.38 },
+  { region: "Metropolitana 3", gap: 377, pct: 5.44, acum: 62.82 },
+  { region: "Norte 1", gap: 364, pct: 5.24, acum: 68.06 },
+  { region: "Noroeste 1", gap: 351, pct: 5.06, acum: 73.12 }
+];
+
+var formalizacaoData = [
+  { region: "Vale dos Sinos 2", msAtual: 95.36, msPos: 131.11, ganho: 35.75, alunos: 262 },
+  { region: "Serra 1", msAtual: 77.54, msPos: 85.89, ganho: 8.35, alunos: 239 },
+  { region: "Metropolitana 3", msAtual: 50.07, msPos: 64.64, ganho: 14.57, alunos: 110 },
+  { region: "Vale dos Sinos 1", msAtual: 83.89, msPos: 105.86, ganho: 21.97, alunos: 105 },
+  { region: "Sul", msAtual: 67.71, msPos: 79.97, ganho: 12.26, alunos: 98 }
+];
+
+var riskData = [
+  { region: "Noroeste 2", cnpj: 9.9, risco: "Alto" }, { region: "Norte 1", cnpj: 9.8, risco: "Alto" },
+  { region: "Encosta da Serra", cnpj: 8.7, risco: "Médio" }, { region: "Serra 3", cnpj: 8.1, risco: "Médio" },
+  { region: "Vale do Taquari 1", cnpj: 7.9, risco: "Médio" }, { region: "Noroeste 1", cnpj: 7.3, risco: "Médio" },
+  { region: "Vale do Rio Pardo", cnpj: 7.3, risco: "Médio" }, { region: "Vale do Taquari 2", cnpj: 7.0, risco: "Baixo" },
+  { region: "Norte 2", cnpj: 6.5, risco: "Baixo" }, { region: "Sul", cnpj: 6.5, risco: "Baixo" },
+  { region: "Vale dos Sinos 3", cnpj: 6.2, risco: "Baixo" }, { region: "Serra 1", cnpj: 5.7, risco: "Baixo" },
+  { region: "Metropolitana 2", cnpj: 4.8, risco: "Baixo" }, { region: "Metropolitana 3", cnpj: 4.4, risco: "Baixo" },
+  { region: "Centro", cnpj: 4.3, risco: "Baixo" }, { region: "Vale dos Sinos 2", cnpj: 4.1, risco: "Baixo" },
+  { region: "Serra 2", cnpj: 3.9, risco: "Baixo" }, { region: "Metropolitana 1", cnpj: 3.6, risco: "Baixo" },
+  { region: "Vale dos Sinos 1", cnpj: 3.0, risco: "Baixo" }
+];
+
+// ===== SHOW REGION DETAIL =====
+function showRegionDetail(regionName) {
+  var container = document.getElementById('regionDetailContent');
+  var downloadBtn = document.getElementById('downloadPdfBtn');
+  if (!regionName) {
+    container.innerHTML = '<div class="text-center py-12 text-gray-400"><p class="text-lg font-semibold">Selecione uma sub-região acima</p><p class="text-sm mt-1">O painel exibirá métricas, estratégias, riscos e recomendações específicas</p></div>';
+    downloadBtn.disabled = true; return;
+  }
+  downloadBtn.disabled = false;
+  var r = regionsData.find(function(d) { return d.name === regionName; });
+  var d = regionDetails[regionName];
+  if (!r || !d) return;
+  var faixaBadge = r.faixa === 'lider' ? 'badge-green' : r.faixa === 'consolidada' ? 'badge-blue' : r.faixa === 'desenvolvimento' ? 'badge-amber' : 'badge-red';
+  var riscoBadge = r.risco === 'Alto' ? 'badge-red' : r.risco === 'Médio' ? 'badge-amber' : 'badge-green';
+  var riscoCard = r.risco === 'Alto' ? 'detail-card-red' : r.risco === 'Médio' ? 'detail-card-amber' : 'detail-card-green';
+  var prioridadeCard = d.prioridadeColor === 'badge-red' ? 'detail-card-red' : d.prioridadeColor === 'badge-amber' ? 'detail-card-amber' : d.prioridadeColor === 'badge-blue' ? 'detail-card-blue' : 'detail-card-green';
+  var estrategiasHTML = d.estrategias.map(function(e) { return '<li>' + e + '</li>'; }).join('');
+  container.innerHTML =
+    '<div id="pdfContent"><div class="mb-4"><div class="flex items-center justify-between flex-wrap gap-2 mb-3"><h3 class="text-xl font-bold text-[#1B2956]">' + r.name + '</h3><div class="flex gap-2"><span class="badge ' + faixaBadge + '">' + faixaLabels[r.faixa] + '</span><span class="badge ' + d.prioridadeColor + '">' + d.prioridade + '</span></div></div>' +
+    '<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 mb-4"><div class="metric-mini"><p class="metric-mini-value" style="color:' + faixaColors[r.faixa] + '">' + r.ms.toFixed(2).replace('.', ',') + '%</p><p class="metric-mini-label">Market Share</p></div><div class="metric-mini"><p class="metric-mini-value text-[#1B2956]">' + r.alunos.toLocaleString('pt-BR') + '</p><p class="metric-mini-label">Alunos</p></div><div class="metric-mini"><p class="metric-mini-value text-[#00A859]">' + r.contratos.toLocaleString('pt-BR') + '</p><p class="metric-mini-label">C/ Contrato</p></div><div class="metric-mini"><p class="metric-mini-value text-[#F58220]">' + r.semContrato + '</p><p class="metric-mini-label">Sem Contrato</p></div><div class="metric-mini"><p class="metric-mini-value text-[#E63946]">' + r.gap.toLocaleString('pt-BR') + '</p><p class="metric-mini-label">Gap (cotas)</p></div><div class="metric-mini"><p class="metric-mini-value text-[#1B2956]">' + r.cnpj.toFixed(1).replace('.', ',') + '</p><p class="metric-mini-label">Alunos/CNPJ</p></div></div></div>' +
+    '<div class="grid grid-cols-1 lg:grid-cols-2 gap-3"><div class="detail-card detail-card-blue"><h4 class="text-[#2E5A88]">Insight Estratégico</h4><p>' + d.insight + '</p></div><div class="detail-card ' + prioridadeCard + '"><h4>Prioridade e Responsabilidade</h4><p><strong>Prioridade:</strong> <span class="badge ' + d.prioridadeColor + '">' + d.prioridade + '</span></p><p class="mt-1"><strong>Responsável:</strong> ' + d.responsavel + '</p><p class="mt-1"><strong>Prazo:</strong> ' + d.prazo + '</p><p class="mt-1"><strong>Meta 180 dias:</strong> ' + d.meta180 + '</p></div></div>' +
+    '<div class="detail-card detail-card-green mt-1"><h4 class="text-[#00A859]">Estratégias e Ações Recomendadas</h4><ul>' + estrategiasHTML + '</ul></div>' +
+    '<div class="detail-card ' + riscoCard + '"><h4>Análise de Risco — Concentração Empresarial</h4><p><strong>Nível de Risco:</strong> <span class="badge ' + riscoBadge + '">' + r.risco + '</span> — ' + r.cnpj.toFixed(1).replace('.', ',') + ' alunos por CNPJ (' + r.cnpjs + ' empresas ativas)</p><p class="mt-2">' + d.riscos + '</p></div>' +
+    '<div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1"><div class="metric-mini"><p class="metric-mini-value text-[#00A859]">' + r.formalizacao.toFixed(2).replace('.', ',') + '%</p><p class="metric-mini-label">Formalização</p></div><div class="metric-mini"><p class="metric-mini-value text-[#1B2956]">' + r.cotas.toLocaleString('pt-BR') + '</p><p class="metric-mini-label">Cotas CAGED</p></div><div class="metric-mini"><p class="metric-mini-value text-[#1B2956]">' + r.cnpjs + '</p><p class="metric-mini-label">CNPJs Ativos</p></div><div class="metric-mini"><p class="metric-mini-value text-[#F58220]">' + r.rank + 'º</p><p class="metric-mini-label">Ranking Rede</p></div></div></div>';
+}
+
+// ===== LOGO PROCESSING FOR PDF =====
+var processedLogoDataUrl = null;
+
+function processLogoForPDF() {
+  var logoImg = document.getElementById('senaiLogoImg');
+  if (!logoImg || !logoImg.complete || logoImg.naturalWidth === 0) return false;
+  try {
+    var canvas = document.createElement('canvas');
+    canvas.width = logoImg.naturalWidth;
+    canvas.height = logoImg.naturalHeight;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(logoImg, 0, 0);
+    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    var data = imageData.data;
+    for (var i = 0; i < data.length; i += 4) {
+      if (data[i] < 30 && data[i+1] < 30 && data[i+2] < 30) { data[i+3] = 0; }
+    }
+    ctx.putImageData(imageData, 0, 0);
+    processedLogoDataUrl = canvas.toDataURL('image/png');
+    return true;
+  } catch(e) { return false; }
+}
+
+// ===== DOWNLOAD PDF (COM LOGO SENAI) =====
+function downloadRegionPDF() {
+  var regionName = document.getElementById('regionSelect').value;
+  if (!regionName) return;
+  var r = regionsData.find(function(d) { return d.name === regionName; });
+  var d = regionDetails[regionName];
+  if (!r || !d) return;
+
+  var btn = document.getElementById('downloadPdfBtn');
+  var originalText = btn.innerHTML;
+  btn.innerHTML = 'Gerando PDF...';
+  btn.disabled = true;
+
+  try {
+    var jsPDFClass = null;
+    if (window.jspdf && window.jspdf.jsPDF) { jsPDFClass = window.jspdf.jsPDF; }
+    else if (typeof window.jsPDF !== 'undefined') { jsPDFClass = window.jsPDF; }
+    if (!jsPDFClass) { throw new Error('jsPDF não encontrado'); }
+
+    var doc = new jsPDFClass({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    var pageW = doc.internal.pageSize.getWidth();
+    var pageH = doc.internal.pageSize.getHeight();
+    var margin = 12;
+    var contentW = pageW - (margin * 2);
+    var y = margin;
+
+    function hexToRgb(hex) { var r2 = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex); return r2 ? [parseInt(r2[1],16), parseInt(r2[2],16), parseInt(r2[3],16)] : [0,0,0]; }
+    function setFill(hex) { var c = hexToRgb(hex); doc.setFillColor(c[0],c[1],c[2]); }
+    function setText(hex) { var c = hexToRgb(hex); doc.setTextColor(c[0],c[1],c[2]); }
+    function setDraw(hex) { var c = hexToRgb(hex); doc.setDrawColor(c[0],c[1],c[2]); }
+    function checkPageBreak(needed) { if (y + needed > pageH - margin - 10) { doc.addPage(); y = margin; return true; } return false; }
+
+    function sanitizeText(text) {
+      return text.replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/→/g, '->').replace(/—/g, '-').replace(/"/g, '"').replace(/"/g, '"').replace(/'/g, "'").replace(/'/g, "'").replace(/º/g, 'o').replace(/²/g, '2').replace(/³/g, '3');
+    }
+    function splitText(text, width, fontSize) { doc.setFont('helvetica', 'normal'); doc.setFontSize(fontSize); return doc.splitTextToSize(sanitizeText(text), width); }
+    function writeLines(lines, x, startY, lineH) { var cy = startY; for (var i = 0; i < lines.length; i++) { doc.text(lines[i], x, cy); cy += lineH; } return cy; }
+    function fmtCnpj(val) { return val.toFixed(1).replace('.', ','); }
+
+    var C = { navy:'#1B2956', navyLight:'#2E5A88', orange:'#F58220', green:'#00A859', red:'#E63946', amber:'#F39C12', gray:'#6C757D', lightGray:'#E2E8F0', white:'#FFFFFF', bgBlue:'#EFF6FF', bgGreen:'#F0FDF4', bgAmber:'#FFFBEB', bgRed:'#FEF2F2', dark:'#374151' };
+
+    // TENTAR PROCESSAR LOGO SE AINDA NÃO FOI PROCESSADO
+    if (!processedLogoDataUrl) { processLogoForPDF(); }
+
+    // HEADER COM LOGO SENAI
+    var logoW = 38, logoH = 14;
+    var logoAdded = false;
+
+    if (processedLogoDataUrl) {
+      try {
+        doc.addImage(processedLogoDataUrl, 'PNG', margin, y, logoW, logoH);
+        logoAdded = true;
+      } catch(e) { logoAdded = false; }
+    } else {
+      var logoImg = document.getElementById('senaiLogoImg');
+      if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+        try { doc.addImage(logoImg, 'PNG', margin, y, logoW, logoH); logoAdded = true; } catch(e2) { logoAdded = false; }
+      }
+    }
+
+    if (!logoAdded) {
+      setFill(C.orange); doc.roundedRect(margin, y, 12, 12, 2, 2, 'F');
+      setText(C.white); doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text('S', margin + 4.5, y + 8.5);
+    }
+
+    var titleX = logoAdded ? margin + logoW + 4 : margin + 16;
+    setText(C.navy); doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.text(sanitizeText('SENAI RS — Relatório de Análise Regional'), titleX, y + 5);
+    setText(C.gray); doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.text('Market Share CAGED | Aprendizagem Industrial | 2. Trimestre 2026', titleX, y + 10);
+    setDraw(C.navy); doc.setLineWidth(0.8); doc.line(margin, y + 17, pageW - margin, y + 17);
+    y += 22;
+
+    // INFO LINE
+    setText(C.gray); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    var dateStr = new Date().toLocaleDateString('pt-BR');
+    doc.text('Sub-região: ', margin, y);
+    setText(C.navy); doc.setFont('helvetica','bold'); doc.text(regionName, margin + 22, y);
+    setText(C.gray); doc.setFont('helvetica','normal');
+    var regW = doc.getTextWidth(regionName);
+    doc.text(sanitizeText(' | Gerado em: ' + dateStr + ' | Uso Interno — Confidencial'), margin + 22 + regW, y);
+    y += 10;
+
+    // REGION TITLE
+    setText(C.navy); doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.text(r.name, margin, y);
+    y += 8;
+
+    // KPI METRICS ROW 1
+    var metrics1 = [
+      { v: r.ms.toFixed(2).replace('.',',')+'%', l: 'Market Share', c: faixaColors[r.faixa] },
+      { v: r.alunos.toLocaleString('pt-BR'), l: 'Alunos', c: C.navy },
+      { v: r.contratos.toLocaleString('pt-BR'), l: 'C/ Contrato', c: C.green },
+      { v: String(r.semContrato), l: 'Sem Contrato', c: C.orange },
+      { v: r.gap.toLocaleString('pt-BR'), l: 'Gap', c: C.red },
+      { v: fmtCnpj(r.cnpj), l: 'Alunos/CNPJ', c: C.navy }
+    ];
+    var mW = (contentW - 10) / 6;
+    for (var i = 0; i < metrics1.length; i++) {
+      var mx = margin + (i * (mW + 2));
+      setFill(C.white); setDraw(C.lightGray); doc.setLineWidth(0.3); doc.roundedRect(mx, y, mW, 16, 1.5, 1.5, 'F');
+      setText(metrics1[i].c); doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text(metrics1[i].v, mx + 2, y + 7);
+      setText(C.gray); doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.text(metrics1[i].l, mx + 2, y + 12);
+    }
+    y += 22;
+
+    // INSIGHT + PRIORITY
+    var halfW = (contentW - 4) / 2;
+    var textW = halfW - 10;
+    var insightLines = splitText(d.insight, textW, 9);
+    var prioText = 'Prioridade: ' + d.prioridade + '\nResponsável: ' + d.responsavel + '\nPrazo: ' + d.prazo + '\nMeta 180 dias: ' + d.meta180;
+    var prioLines = splitText(prioText, textW, 9);
+    var lineH = 4.8;
+    var insightH = insightLines.length * lineH + 14;
+    var prioH = prioLines.length * lineH + 14;
+    var cardH = Math.max(insightH, prioH, 30);
+    checkPageBreak(cardH + 4);
+
+    setFill(C.bgBlue); doc.roundedRect(margin, y, halfW, cardH, 2, 2, 'F');
+    setFill(C.navyLight); doc.rect(margin, y, 1.5, cardH, 'F');
+    setText(C.navyLight); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.text('INSIGHT ESTRATÉGICO', margin + 5, y + 6);
+    setText(C.dark); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    writeLines(insightLines, margin + 5, y + 12, lineH);
+
+    var px = margin + halfW + 4;
+    var prioBg = d.prioridadeColor === 'badge-red' ? C.bgRed : d.prioridadeColor === 'badge-amber' ? C.bgAmber : d.prioridadeColor === 'badge-blue' ? C.bgBlue : C.bgGreen;
+    var prioBd = d.prioridadeColor === 'badge-red' ? C.red : d.prioridadeColor === 'badge-amber' ? C.amber : d.prioridadeColor === 'badge-blue' ? C.navyLight : C.green;
+    setFill(prioBg); doc.roundedRect(px, y, halfW, cardH, 2, 2, 'F');
+    setFill(prioBd); doc.rect(px, y, 1.5, cardH, 'F');
+    setText(prioBd); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.text('PRIORIDADE E RESPONSABILIDADE', px + 5, y + 6);
+    setText(C.dark); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    writeLines(prioLines, px + 5, y + 12, lineH);
+    y += cardH + 4;
+
+    // ESTRATÉGIAS
+    var stratItems = [];
+    for (var s = 0; s < d.estrategias.length; s++) { stratItems.push(splitText(d.estrategias[s], contentW - 14, 9)); }
+    var stratH = 14;
+    for (var si = 0; si < stratItems.length; si++) { stratH += stratItems[si].length * lineH + 3; }
+    checkPageBreak(stratH + 4);
+
+    setFill(C.bgGreen); doc.roundedRect(margin, y, contentW, stratH, 2, 2, 'F');
+    setFill(C.green); doc.rect(margin, y, 1.5, stratH, 'F');
+    setText(C.green); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.text('ESTRATÉGIAS E AÇÕES RECOMENDADAS', margin + 5, y + 6);
+    setText(C.dark); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    var sY = y + 12;
+    for (var si2 = 0; si2 < stratItems.length; si2++) {
+      doc.setFont('helvetica','bold'); doc.text((si2+1)+'.', margin + 5, sY);
+      doc.setFont('helvetica','normal');
+      sY = writeLines(stratItems[si2], margin + 9, sY, lineH);
+      sY += 3;
+    }
+    y += stratH + 4;
+
+    // ANÁLISE DE RISCO
+    var riscoBg = r.risco === 'Alto' ? C.bgRed : r.risco === 'Médio' ? C.bgAmber : C.bgGreen;
+    var riscoBd = r.risco === 'Alto' ? C.red : r.risco === 'Médio' ? C.amber : C.green;
+    var riskIntro = 'Nível de Risco: ' + r.risco + ' - ' + fmtCnpj(r.cnpj) + ' alunos por CNPJ (' + r.cnpjs + ' empresas ativas)';
+    var riskIntroL = splitText(riskIntro, contentW - 10, 9);
+    var riskDetL = splitText(d.riscos, contentW - 10, 9);
+    var riskH = (riskIntroL.length + riskDetL.length) * lineH + 20;
+    checkPageBreak(riskH + 4);
+
+    setFill(riscoBg); doc.roundedRect(margin, y, contentW, riskH, 2, 2, 'F');
+    setFill(riscoBd); doc.rect(margin, y, 1.5, riskH, 'F');
+    setText(riscoBd); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.text('ANÁLISE DE RISCO — CONCENTRAÇÃO EMPRESARIAL', margin + 5, y + 6);
+    setText(C.dark); doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    var rY = y + 12;
+    rY = writeLines(riskIntroL, margin + 5, rY, lineH);
+    rY += 2;
+    rY = writeLines(riskDetL, margin + 5, rY, lineH);
+    y += riskH + 4;
+
+    // METRICS ROW 2
+    var metrics2 = [
+      { v: r.formalizacao.toFixed(2).replace('.',',')+'%', l: 'Formalização', c: C.green },
+      { v: r.cotas.toLocaleString('pt-BR'), l: 'Cotas CAGED', c: C.navy },
+      { v: String(r.cnpjs), l: 'CNPJs Ativos', c: C.navy },
+      { v: r.rank + '/19', l: 'Ranking Rede', c: C.orange }
+    ];
+    var mW2 = (contentW - 6) / 4;
+    checkPageBreak(20);
+    for (var j = 0; j < metrics2.length; j++) {
+      var mx2 = margin + (j * (mW2 + 2));
+      setFill(C.white); setDraw(C.lightGray); doc.setLineWidth(0.3); doc.roundedRect(mx2, y, mW2, 16, 1.5, 1.5, 'F');
+      setText(metrics2[j].c); doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text(metrics2[j].v, mx2 + 2, y + 7);
+      setText(C.gray); doc.setFont('helvetica','normal'); doc.setFontSize(6); doc.text(metrics2[j].l, mx2 + 2, y + 12);
+    }
+    y += 22;
+
+    // FOOTER
+    checkPageBreak(15);
+    setDraw(C.lightGray); doc.setLineWidth(0.3); doc.line(margin, y, pageW - margin, y); y += 5;
+    setText(C.gray); doc.setFont('helvetica','normal'); doc.setFontSize(7);
+    doc.text('SENAI RS - Gerência de Educação Profissional e Superior | Dashboard Executivo Market Share CAGED | Q2 2026', pageW / 2, y, { align: 'center' });
+
+    doc.save('SENAI-RS_Relatorio_' + regionName.replace(/\s+/g, '_') + '_Q2-2026.pdf');
+    btn.innerHTML = originalText; btn.disabled = false;
+  } catch (err) {
+    console.error('Erro ao gerar PDF:', err);
+    btn.innerHTML = 'Erro — tente novamente'; btn.disabled = false;
+    setTimeout(function() { btn.innerHTML = originalText; }, 3000);
+  }
+}
+
+// ===== CHART ERROR HANDLER =====
+function handleChartError(canvasId, error) {
+  console.error('Erro ao renderizar gráfico ' + canvasId + ':', error);
+  var canvas = document.getElementById(canvasId);
+  if (canvas) { canvas.parentElement.innerHTML = '<div class="chart-error">Não foi possível carregar este gráfico. Verifique sua conexão.</div>'; }
+}
+
+// ===== REGIONAL CHART =====
+var regionalChart;
+function renderRegionalChart(filter) {
+  try {
+    var filtered = filter === 'all' ? regionsData : regionsData.filter(function(r) { return r.faixa === filter; });
+    var sorted = filtered.slice().sort(function(a, b) { return b.ms - a.ms; });
+    var ctx = document.getElementById('regionalChart').getContext('2d');
+    if (regionalChart) regionalChart.destroy();
+    regionalChart = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: sorted.map(function(r) { return r.name; }), datasets: [
+        { label: 'Market Share CAGED (%)', data: sorted.map(function(r) { return r.ms; }), backgroundColor: sorted.map(function(r) { return faixaColors[r.faixa]; }), borderRadius: 6, maxBarThickness: 35 },
+        { label: 'Meta Estratégica (80%)', data: sorted.map(function() { return 80; }), type: 'line', borderColor: '#E63946', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, fill: false }
+      ]},
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'top', labels: { font: { size: 11 } } },
+          tooltip: { callbacks: { label: function(ctx) {
+            if (ctx.datasetIndex === 1) return 'Meta: 80%';
+            var r = sorted[ctx.dataIndex];
+            return ['Market Share: ' + r.ms.toFixed(2).replace('.', ',') + '%', 'Alunos: ' + r.alunos.toLocaleString('pt-BR'), 'CNPJs: ' + r.cnpjs, 'C/ Contrato: ' + r.contratos.toLocaleString('pt-BR'), 'Sem Contrato: ' + r.semContrato, 'Formalização: ' + r.formalizacao.toFixed(2).replace('.', ',') + '%', 'Cotas CAGED: ' + r.cotas.toLocaleString('pt-BR'), 'Gap: ' + r.gap.toLocaleString('pt-BR'), 'Alunos/CNPJ: ' + r.cnpj.toFixed(1).replace('.', ','), 'Risco: ' + r.risco];
+          } } } },
+        scales: { x: { beginAtZero: true, max: 100, grid: { color: '#F1F5F9' }, ticks: { callback: function(v) { return v + '%'; } } }, y: { grid: { display: false }, ticks: { font: { size: 11 } } } }
+      }
+    });
+  } catch (e) { handleChartError('regionalChart', e); }
+}
+
+function filterRegion(faixa, btn) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); b.setAttribute('aria-pressed', 'false'); });
+  if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true'); }
+  renderRegionalChart(faixa);
+}
+
+function renderTable() {
+  var tbody = document.getElementById('regionalTableBody');
+  tbody.innerHTML = regionsData.map(function(r) {
+    var riscoBadge = r.risco === 'Alto' ? 'badge-red' : r.risco === 'Médio' ? 'badge-amber' : 'badge-green';
+    var faixaBadge = r.faixa === 'lider' ? 'badge-green' : r.faixa === 'consolidada' ? 'badge-blue' : r.faixa === 'desenvolvimento' ? 'badge-amber' : 'badge-red';
+    var semContratoCell = r.semContrato > 0 ? '<span class="text-[#F58220] font-semibold">' + r.semContrato + '</span>' : '—';
+    return '<tr><td class="font-bold text-gray-400">' + r.rank + '</td><td class="font-semibold">' + r.name + '</td><td class="font-bold" style="color: ' + faixaColors[r.faixa] + '">' + r.ms.toFixed(2).replace('.', ',') + '%</td><td><span class="badge ' + faixaBadge + '">' + faixaLabels[r.faixa] + '</span></td><td>' + r.alunos.toLocaleString('pt-BR') + '</td><td>' + r.cnpjs + '</td><td>' + r.contratos.toLocaleString('pt-BR') + '</td><td>' + semContratoCell + '</td><td>' + r.formalizacao.toFixed(2).replace('.', ',') + '%</td><td>' + r.cotas.toLocaleString('pt-BR') + '</td><td class="font-semibold text-[#E63946]">' + r.gap.toLocaleString('pt-BR') + '</td><td>' + r.cnpj.toFixed(1).replace('.', ',') + '</td><td><span class="badge ' + riscoBadge + '">' + r.risco + '</span></td></tr>';
+  }).join('');
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', function() {
+  // Pré-processar logo para PDF quando carregar
+  var logoImg = document.getElementById('senaiLogoImg');
+  if (logoImg) {
+    logoImg.addEventListener('load', function() { processLogoForPDF(); });
+    if (logoImg.complete && logoImg.naturalWidth > 0) { processLogoForPDF(); }
+  }
+
+  if (typeof Chart === 'undefined') {
+    document.querySelectorAll('canvas').forEach(function(c) { c.parentElement.innerHTML = '<div class="chart-error">Biblioteca de gráficos não carregou. Verifique sua conexão.</div>'; });
+    renderTable(); return;
+  }
+  renderRegionalChart('all');
+  try { new Chart(document.getElementById('paretoChart').getContext('2d'), { type: 'bar', data: { labels: paretoData.map(function(d) { return d.region; }), datasets: [
+    { label: 'Gap de Mercado (cotas)', data: paretoData.map(function(d) { return d.gap; }), backgroundColor: '#1B2956', borderRadius: 4, yAxisID: 'y' },
+    { label: '% Acumulado (Pareto)', data: paretoData.map(function(d) { return d.acum; }), type: 'line', borderColor: '#E63946', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#E63946', yAxisID: 'y1', fill: false }
+  ]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } }, tooltip: { callbacks: { label: function(ctx) { if (ctx.datasetIndex === 1) return '% Acumulado: ' + ctx.parsed.y.toFixed(2).replace('.', ',') + '%'; return 'Gap: ' + ctx.parsed.y.toLocaleString('pt-BR') + ' cotas'; } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } }, y: { beginAtZero: true, title: { display: true, text: 'Cotas' } }, y1: { position: 'right', beginAtZero: true, max: 100, grid: { drawOnChartArea: false }, title: { display: true, text: '% Acumulado' }, ticks: { callback: function(v) { return v + '%'; } } } } } }); } catch (e) { handleChartError('paretoChart', e); }
+  try { new Chart(document.getElementById('formalizacaoChart').getContext('2d'), { type: 'bar', data: { labels: formalizacaoData.map(function(d) { return d.region; }), datasets: [
+    { label: 'MS Atual (%)', data: formalizacaoData.map(function(d) { return d.msAtual; }), backgroundColor: '#2E5A88', borderRadius: 4 },
+    { label: 'MS Pós-Formalização (%)', data: formalizacaoData.map(function(d) { return d.msPos; }), backgroundColor: '#00A859', borderRadius: 4 }
+  ]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } }, tooltip: { callbacks: { afterLabel: function(ctx) { var d = formalizacaoData[ctx.dataIndex]; return ['Ganho: +' + d.ganho.toFixed(2).replace('.', ',') + ' p.p.', 'Alunos sem contrato: ' + d.alunos]; } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } }, y: { beginAtZero: true, title: { display: true, text: 'Market Share (%)' }, ticks: { callback: function(v) { return v + '%'; } } } } } }); } catch (e) { handleChartError('formalizacaoChart', e); }
+  try { new Chart(document.getElementById('roadmapChart').getContext('2d'), { type: 'line', data: { labels: ['Atual', 'H1 — 30 dias', 'H2 — 180 dias', 'H3 — 12 meses'], datasets: [
+    { label: 'Market Share Projetado (%)', data: [67.83, 72.79, 76, 80], borderColor: '#00A859', backgroundColor: 'rgba(0, 168, 89, 0.1)', borderWidth: 3, fill: true, tension: 0.3, pointRadius: 6, pointBackgroundColor: ['#E63946', '#F58220', '#2E5A88', '#00A859'] },
+    { label: 'Meta Estratégica (80%)', data: [80, 80, 80, 80], borderColor: '#E63946', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, fill: false }
+  ]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } }, tooltip: { callbacks: { label: function(ctx) { if (ctx.datasetIndex === 0) { var labels = ['Diagnóstico atual', 'Formalizar 1.070 alunos', 'Captação estrutural', 'Diversificação e sustentabilidade']; return 'MS: ' + ctx.parsed.y + '% — ' + labels[ctx.dataIndex]; } return 'Meta: 80%'; } } } }, scales: { y: { beginAtZero: false, min: 60, max: 85, ticks: { callback: function(v) { return v + '%'; } } }, x: { grid: { display: false } } } } }); } catch (e) { handleChartError('roadmapChart', e); }
+  try { new Chart(document.getElementById('riskChart').getContext('2d'), { type: 'bar', data: { labels: riskData.map(function(d) { return d.region; }), datasets: [
+    { label: 'Alunos por CNPJ', data: riskData.map(function(d) { return d.cnpj; }), backgroundColor: riskData.map(function(d) { return d.risco === 'Alto' ? '#E63946' : d.risco === 'Médio' ? '#F39C12' : '#00A859'; }), borderRadius: 4 },
+    { label: 'Meta (< 7 alunos/CNPJ)', data: riskData.map(function() { return 7; }), type: 'line', borderColor: '#1B2956', borderWidth: 2, borderDash: [6, 4], pointRadius: 0, fill: false }
+  ]}, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } }, tooltip: { callbacks: { afterLabel: function(ctx) { if (ctx.datasetIndex === 0) return 'Risco: ' + riskData[ctx.dataIndex].risco; return null; } } } }, scales: { x: { beginAtZero: true, max: 12, title: { display: true, text: 'Alunos por CNPJ' } }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } } } }); } catch (e) { handleChartError('riskChart', e); }
+  renderTable();
+});
+</script>
+<script src="complemento.js"></script>
+</body>
+</html>
